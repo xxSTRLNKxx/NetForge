@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthPage } from './pages/AuthPage';
+import SetupPage from './pages/SetupPage';
 import { Dashboard } from './pages/Dashboard';
 import { Sidebar } from './components/Layout/Sidebar';
 import { AssetsPage } from './pages/AssetsPage';
@@ -36,6 +37,7 @@ import { DesignerPage } from './pages/DesignerPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { ActivityLogPage } from './pages/admin/ActivityLogPage';
 import { ProfilePage } from './pages/ProfilePage';
+import api from './lib/api';
 
 const VIEW_MAP: Record<string, React.ComponentType> = {
   'dcim-sites': SitesPage,
@@ -77,13 +79,32 @@ function AppContent() {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [installed, setInstalled] = useState<boolean | null>(null);
 
-  if (loading) {
+  useEffect(() => {
+    checkInstallation();
+  }, []);
+
+  const checkInstallation = async () => {
+    try {
+      const status = await api.setup.status();
+      setInstalled(status.installed);
+    } catch (error) {
+      console.error('Error checking installation:', error);
+      setInstalled(false);
+    }
+  };
+
+  if (installed === null || loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (!installed) {
+    return <SetupPage onComplete={() => setInstalled(true)} />;
   }
 
   if (!user) {

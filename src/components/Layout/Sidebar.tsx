@@ -141,7 +141,7 @@ function sectionOwns(section: NavSection, view: string) {
 }
 
 export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
-  const { signOut, profile } = useAuth();
+  const { signOut, user } = useAuth();
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     NAV_SECTIONS.forEach((s) => { init[s.id] = sectionOwns(s, currentView); });
@@ -165,7 +165,7 @@ export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-500 truncate pl-0.5">{profile?.full_name || profile?.email || ''}</p>
+        <p className="text-xs text-gray-500 truncate pl-0.5">{user?.full_name || user?.email || ''}</p>
       </div>
 
       <div className="px-2 pt-2 shrink-0">
@@ -231,6 +231,32 @@ export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
       </nav>
 
       <div className="px-2 py-2 border-t border-gray-800 shrink-0 space-y-1">
+        {user?.role === 'admin' && (
+          <>
+            <button
+              onClick={() => onViewChange('users')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${
+                currentView === 'users'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              Users
+            </button>
+            <button
+              onClick={() => onViewChange('activity-log')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${
+                currentView === 'activity-log'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              Activity Log
+            </button>
+          </>
+        )}
         <button
           onClick={() => onViewChange('profile')}
           className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MapPin, Server, Network, Database, Users, Cable } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 
 interface Stats {
   dcim: {
@@ -70,71 +70,35 @@ export function Dashboard() {
 
   const loadStats = async () => {
     try {
-      const [
-        sitesResult,
-        racksResult,
-        devicesResult,
-        deviceTypesResult,
-        cablesResult,
-        interfacesResult,
-        vrfsResult,
-        prefixesResult,
-        ipAddressesResult,
-        vlansResult,
-        providersResult,
-        circuitsResult,
-        circuitTypesResult,
-        clustersResult,
-        virtualMachinesResult,
-        tenantsResult,
-        contactsResult,
-      ] = await Promise.all([
-        supabase.from('dcim_sites').select('id', { count: 'exact', head: true }),
-        supabase.from('dcim_racks').select('id', { count: 'exact', head: true }),
-        supabase.from('dcim_devices').select('id', { count: 'exact', head: true }),
-        supabase.from('dcim_device_types').select('id', { count: 'exact', head: true }),
-        supabase.from('dcim_cables').select('id', { count: 'exact', head: true }),
-        supabase.from('dcim_interfaces').select('id', { count: 'exact', head: true }),
-        supabase.from('ipam_vrfs').select('id', { count: 'exact', head: true }),
-        supabase.from('ipam_prefixes').select('id', { count: 'exact', head: true }),
-        supabase.from('ipam_ip_addresses').select('id', { count: 'exact', head: true }),
-        supabase.from('ipam_vlans').select('id', { count: 'exact', head: true }),
-        supabase.from('circuits_providers').select('id', { count: 'exact', head: true }),
-        supabase.from('circuits_circuits').select('id', { count: 'exact', head: true }),
-        supabase.from('circuits_circuit_types').select('id', { count: 'exact', head: true }),
-        supabase.from('virtualization_clusters').select('id', { count: 'exact', head: true }),
-        supabase.from('virtualization_virtual_machines').select('id', { count: 'exact', head: true }),
-        supabase.from('tenancy_tenants').select('id', { count: 'exact', head: true }),
-        supabase.from('tenancy_contacts').select('id', { count: 'exact', head: true }),
-      ]);
+      const data = await api.stats();
 
       setStats({
         dcim: {
-          sites: sitesResult.count || 0,
-          racks: racksResult.count || 0,
-          devices: devicesResult.count || 0,
-          deviceTypes: deviceTypesResult.count || 0,
-          cables: cablesResult.count || 0,
-          interfaces: interfacesResult.count || 0,
+          sites: data.sites?.count || 0,
+          racks: data.racks?.count || 0,
+          devices: data.devices?.count || 0,
+          deviceTypes: 0,
+          cables: 0,
+          interfaces: 0,
         },
         ipam: {
-          vrfs: vrfsResult.count || 0,
-          prefixes: prefixesResult.count || 0,
-          ipAddresses: ipAddressesResult.count || 0,
-          vlans: vlansResult.count || 0,
+          vrfs: 0,
+          prefixes: data.prefixes?.count || 0,
+          ipAddresses: data.ip_addresses?.count || 0,
+          vlans: 0,
         },
         circuits: {
-          providers: providersResult.count || 0,
-          circuits: circuitsResult.count || 0,
-          circuitTypes: circuitTypesResult.count || 0,
+          providers: 0,
+          circuits: data.circuits?.count || 0,
+          circuitTypes: 0,
         },
         virtualization: {
-          clusters: clustersResult.count || 0,
-          virtualMachines: virtualMachinesResult.count || 0,
+          clusters: 0,
+          virtualMachines: data.virtual_machines?.count || 0,
         },
         tenancy: {
-          tenants: tenantsResult.count || 0,
-          contacts: contactsResult.count || 0,
+          tenants: 0,
+          contacts: 0,
         },
       });
     } catch (error) {
