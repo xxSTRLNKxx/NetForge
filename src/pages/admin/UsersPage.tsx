@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Shield, Edit2, Trash2 } from 'lucide-react';
+import { Users, Shield, CreditCard as Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PageHeader } from '../../components/UI/PageHeader';
 import { StatusBadge } from '../../components/UI/StatusBadge';
