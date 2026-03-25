@@ -4,75 +4,24 @@ import { AuthPage } from './pages/AuthPage';
 import SetupPage from './pages/SetupPage';
 import { Dashboard } from './pages/Dashboard';
 import { Sidebar } from './components/Layout/Sidebar';
-import { AssetsPage } from './pages/AssetsPage';
-import { LocationsPage } from './pages/LocationsPage';
-import { InfrastructurePage } from './pages/InfrastructurePage';
-import { SitesPage } from './pages/dcim/SitesPage';
-import { RegionsPage } from './pages/dcim/RegionsPage';
-import { RacksPage } from './pages/dcim/RacksPage';
-import { ManufacturersPage } from './pages/dcim/ManufacturersPage';
-import { DeviceTypesPage } from './pages/dcim/DeviceTypesPage';
-import { DeviceRolesPage } from './pages/dcim/DeviceRolesPage';
-import { PlatformsPage } from './pages/dcim/PlatformsPage';
-import { DevicesPage } from './pages/dcim/DevicesPage';
-import { InterfacesPage } from './pages/dcim/InterfacesPage';
-import { CablesPage } from './pages/dcim/CablesPage';
-import { VRFsPage } from './pages/ipam/VRFsPage';
-import { PrefixesPage } from './pages/ipam/PrefixesPage';
-import { IPAddressesPage } from './pages/ipam/IPAddressesPage';
-import { VLANsPage } from './pages/ipam/VLANsPage';
-import { VLANGroupsPage } from './pages/ipam/VLANGroupsPage';
-import { ClustersPage } from './pages/virtualization/ClustersPage';
-import { ClusterTypesPage } from './pages/virtualization/ClusterTypesPage';
-import { VirtualMachinesPage } from './pages/virtualization/VirtualMachinesPage';
-import { ProvidersPage } from './pages/circuits/ProvidersPage';
-import { CircuitTypesPage } from './pages/circuits/CircuitTypesPage';
-import { CircuitsPage } from './pages/circuits/CircuitsPage';
-import { TenantsPage } from './pages/tenancy/TenantsPage';
-import { TenantGroupsPage } from './pages/tenancy/TenantGroupsPage';
-import { ContactsPage } from './pages/tenancy/ContactsPage';
-import { ContactGroupsPage } from './pages/tenancy/ContactGroupsPage';
-import { ContactRolesPage } from './pages/tenancy/ContactRolesPage';
-import { DesignerPage } from './pages/DesignerPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { ActivityLogPage } from './pages/admin/ActivityLogPage';
-import { ProfilePage } from './pages/ProfilePage';
 import api from './lib/api';
 
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-slate-900 mb-4">{title}</h1>
+      <p className="text-slate-600">This feature is under development</p>
+    </div>
+  );
+}
+
 const VIEW_MAP: Record<string, React.ComponentType> = {
-  'dcim-sites': SitesPage,
-  'dcim-regions': RegionsPage,
-  'dcim-racks': RacksPage,
-  'dcim-manufacturers': ManufacturersPage,
-  'dcim-device-types': DeviceTypesPage,
-  'dcim-device-roles': DeviceRolesPage,
-  'dcim-platforms': PlatformsPage,
-  'dcim-devices': DevicesPage,
-  'dcim-interfaces': InterfacesPage,
-  'dcim-cables': CablesPage,
-  'ipam-vrfs': VRFsPage,
-  'ipam-prefixes': PrefixesPage,
-  'ipam-ip-addresses': IPAddressesPage,
-  'ipam-vlans': VLANsPage,
-  'ipam-vlan-groups': VLANGroupsPage,
-  'virt-clusters': ClustersPage,
-  'virt-cluster-types': ClusterTypesPage,
-  'virt-virtual-machines': VirtualMachinesPage,
-  'circuits-providers': ProvidersPage,
-  'circuits-types': CircuitTypesPage,
-  'circuits-list': CircuitsPage,
-  'tenants': TenantsPage,
-  'tenant-groups': TenantGroupsPage,
-  'contacts': ContactsPage,
-  'contact-groups': ContactGroupsPage,
-  'contact-roles': ContactRolesPage,
-  'assets': AssetsPage,
-  'locations': LocationsPage,
-  'diagrams': InfrastructurePage,
-  'designer': DesignerPage,
+  'profile': ProfilePage,
   'users': UsersPage,
   'activity-log': ActivityLogPage,
-  'profile': ProfilePage,
 };
 
 function AppContent() {
@@ -134,7 +83,7 @@ function AppContent() {
         ) : ViewComponent ? (
           <ViewComponent />
         ) : (
-          <Dashboard />
+          <PlaceholderPage title={currentView} />
         )}
       </div>
     </div>
