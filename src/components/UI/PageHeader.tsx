@@ -1,4 +1,4 @@
-import { Plus, LucideIcon } from 'lucide-react';
+import { Plus, Video as LucideIcon } from 'lucide-react';
 
 interface PageHeaderProps {
   title: string;
