@@ -13,6 +13,8 @@ import {
   LogOut,
   Activity,
   PanelLeftClose,
+  Shield,
+  User,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -122,6 +124,16 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'designer', label: 'Designer' },
     ],
   },
+  {
+    id: 'admin',
+    label: 'Administration',
+    icon: Shield,
+    color: 'text-red-400',
+    items: [
+      { id: 'users', label: 'Users' },
+      { id: 'activity-log', label: 'Activity Log' },
+    ],
+  },
 ];
 
 function sectionOwns(section: NavSection, view: string) {
@@ -218,7 +230,18 @@ export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
         })}
       </nav>
 
-      <div className="px-2 py-2 border-t border-gray-800 shrink-0">
+      <div className="px-2 py-2 border-t border-gray-800 shrink-0 space-y-1">
+        <button
+          onClick={() => onViewChange('profile')}
+          className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${
+            currentView === 'profile'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+          }`}
+        >
+          <User className="w-4 h-4" />
+          My Profile
+        </button>
         <button
           onClick={signOut}
           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors"
