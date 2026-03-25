@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, Shield, Calendar, Camera, Save } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { PageHeader } from '../components/UI/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,14 +29,7 @@ export function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
+      const data = await api.profile.get();
       if (data) {
         setProfile(data);
         setFullName(data.full_name || '');
@@ -54,15 +47,10 @@ export function ProfilePage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          full_name: fullName,
-          avatar_url: avatarUrl || null,
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      await api.profile.update({
+        full_name: fullName,
+        avatar_url: avatarUrl || undefined,
+      });
 
       alert('Profile updated successfully');
       await loadProfile();

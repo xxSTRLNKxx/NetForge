@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Activity, Filter } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import { PageHeader } from '../../components/UI/PageHeader';
 import { StatusBadge } from '../../components/UI/StatusBadge';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ActivityLogEntry {
   id: string;
@@ -17,64 +18,23 @@ interface ActivityLogEntry {
 }
 
 export function ActivityLogPage() {
+  const { user } = useAuth();
   const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState<string>('all');
   const [filterTable, setFilterTable] = useState<string>('all');
-  const [currentUserRole, setCurrentUserRole] = useState<string>('');
 
   useEffect(() => {
-    checkCurrentUserRole();
     loadActivities();
   }, [filterAction, filterTable]);
 
-  const checkCurrentUserRole = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (data) {
-        setCurrentUserRole(data.role);
-      }
-    }
-  };
-
   const loadActivities = async () => {
     try {
-      let query = supabase
-        .from('activity_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (filterAction !== 'all') {
-        query = query.eq('action', filterAction);
-      }
-
-      if (filterTable !== 'all') {
-        query = query.eq('table_name', filterTable);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const userIds = [...new Set(data?.map(a => a.user_id).filter(Boolean))];
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      const activitiesWithUser = data?.map(activity => ({
-        ...activity,
-        user_name: profiles?.find(p => p.id === activity.user_id)?.full_name || 'Unknown User'
-      })) || [];
-
-      setActivities(activitiesWithUser);
+      const data = await api.activityLog.getAll({
+        action: filterAction,
+        table_name: filterTable,
+      });
+      setActivities(data || []);
     } catch (error) {
       console.error('Error loading activities:', error);
     } finally {
@@ -101,7 +61,7 @@ export function ActivityLogPage() {
       .replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  if (currentUserRole !== 'admin') {
+  if (user?.role !== 'admin') {
     return (
       <div className="p-8">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

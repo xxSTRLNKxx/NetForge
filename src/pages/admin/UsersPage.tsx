@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Users, Shield, CreditCard as Edit2, Trash2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import { PageHeader } from '../../components/UI/PageHeader';
 import { StatusBadge } from '../../components/UI/StatusBadge';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface UserProfile {
   id: string;
@@ -15,53 +16,20 @@ interface UserProfile {
 }
 
 export function UsersPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('');
 
   useEffect(() => {
     loadUsers();
-    checkCurrentUserRole();
   }, []);
-
-  const checkCurrentUserRole = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (data) {
-        setCurrentUserRole(data.role);
-      }
-    }
-  };
 
   const loadUsers = async () => {
     try {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-      }
-
-      const usersWithEmail = profiles?.map(profile => ({
-        ...profile,
-        email: authUsers?.find(u => u.id === profile.id)?.email || 'N/A'
-      })) || [];
-
-      setUsers(usersWithEmail);
+      const data = await api.users.getAll();
+      setUsers(data || []);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
@@ -78,9 +46,7 @@ export function UsersPage() {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
-
+      await api.users.delete(userId);
       await loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -92,16 +58,11 @@ export function UsersPage() {
     try {
       if (!editingUser) return;
 
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          full_name: formData.full_name,
-          role: formData.role,
-          is_active: formData.is_active === 'true',
-        })
-        .eq('id', editingUser.id);
-
-      if (error) throw error;
+      await api.users.update(editingUser.id, {
+        full_name: formData.full_name,
+        role: formData.role,
+        is_active: formData.is_active === 'true',
+      });
 
       setIsModalOpen(false);
       setEditingUser(null);
@@ -125,7 +86,7 @@ export function UsersPage() {
     }
   };
 
-  if (currentUserRole !== 'admin') {
+  if (currentUser?.role !== 'admin') {
     return (
       <div className="p-8">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

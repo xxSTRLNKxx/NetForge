@@ -104,10 +104,32 @@ export const api = {
 
   users: {
     getAll: () => fetchAPI('/users'),
+    getOne: (id: string) => fetchAPI(`/users/${id}`),
+    update: (id: string, data: any) => fetchAPI(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    delete: (id: string) => fetchAPI(`/users/${id}`, {
+      method: 'DELETE',
+    }),
   },
 
   activityLog: {
-    getAll: () => fetchAPI('/activity_log'),
+    getAll: (filters?: { action?: string; table_name?: string }) => {
+      const params = new URLSearchParams();
+      if (filters?.action && filters.action !== 'all') params.append('action', filters.action);
+      if (filters?.table_name && filters.table_name !== 'all') params.append('table_name', filters.table_name);
+      const query = params.toString();
+      return fetchAPI(`/activity_log${query ? `?${query}` : ''}`);
+    },
+  },
+
+  profile: {
+    get: () => fetchAPI('/profile'),
+    update: (data: { full_name?: string; avatar_url?: string }) => fetchAPI('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
   },
 };
 

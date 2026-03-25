@@ -2,7 +2,7 @@
 
 **Enterprise IT Infrastructure Management Platform**
 
-NetForge is a modern, full-featured IT infrastructure management system that combines the comprehensive data modeling of NetBox with an intuitive visual network designer. Built with React, TypeScript, and Supabase, it provides organizations with a powerful tool to document, manage, and visualize their IT infrastructure.
+NetForge is a modern, full-featured IT infrastructure management system that combines the comprehensive data modeling of NetBox with an intuitive visual network designer. Built with React, TypeScript, and Express.js with SQLite, it provides organizations with a powerful, self-hosted tool to document, manage, and visualize their IT infrastructure.
 
 ## Features
 
@@ -46,8 +46,8 @@ NetForge is a modern, full-featured IT infrastructure management system that com
 - **Role-Based Access Control**: Admin, User, and Read-Only roles
 - **User Profiles**: Avatar support and profile customization
 - **Activity Logging**: Comprehensive audit trail of all changes
-- **Supabase Authentication**: Secure email/password authentication
-- **Row-Level Security**: Data isolation and protection
+- **JWT Authentication**: Secure email/password authentication
+- **Local Data Storage**: All data stored securely on your server
 
 ### Dashboard & Analytics
 - **Real-time Statistics**: Live counts across all resource types
@@ -59,15 +59,14 @@ NetForge is a modern, full-featured IT infrastructure management system that com
 - **Frontend**: React 18, TypeScript, Vite
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
-- **Backend**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth with RLS
-- **Database**: PostgreSQL with full schema migrations
+- **Backend**: Express.js with TypeScript
+- **Database**: SQLite (self-contained, no external dependencies)
+- **Authentication**: JWT with bcrypt password hashing
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Supabase account (free tier available)
 
 ### Installation
 
@@ -82,29 +81,24 @@ cd netforge
 npm install
 ```
 
-3. Configure environment variables:
-Create a `.env` file in the root directory:
-```env
-VITE_SUPABASE_URL=your-supabase-project-url
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-4. Run database migrations:
-All migrations are located in `supabase/migrations/` and will be automatically applied to your Supabase project.
-
-5. Start the development server:
+3. Start the application:
 ```bash
-npm run dev
+npm start
 ```
 
-6. Build for production:
+4. Complete the setup wizard:
+- Open your browser to http://localhost:3000
+- Follow the on-screen setup wizard
+- Create your admin account
+
+5. Build for production:
 ```bash
 npm run build
 ```
 
 ## Database Schema
 
-NetForge uses a comprehensive PostgreSQL schema with the following major table groups:
+NetForge uses a comprehensive SQLite schema with the following major table groups:
 
 ### DCIM Tables
 - `dcim_sites`, `dcim_regions`, `dcim_racks`
@@ -132,10 +126,8 @@ NetForge uses a comprehensive PostgreSQL schema with the following major table g
 - `node_ports`
 
 ### User Management
-- `user_profiles` (roles, avatars, status)
+- `users` (authentication, roles)
 - `activity_log` (audit trail)
-
-All tables implement Row-Level Security (RLS) policies for data protection.
 
 ## User Roles
 
@@ -146,38 +138,41 @@ All tables implement Row-Level Security (RLS) policies for data protection.
 ## Security
 
 NetForge implements enterprise-grade security:
-- Row-Level Security (RLS) on all tables
-- Secure authentication with Supabase Auth
-- Password hashing and secure session management
-- Activity logging for compliance and auditing
+- JWT-based authentication
+- Bcrypt password hashing (10 rounds)
 - Role-based access control
-- Data isolation between tenants
+- Activity logging for compliance and auditing
+- Local data storage (no cloud dependencies)
 
 ## Project Structure
 
 ```
 netforge/
+├── server/               # Express.js backend
+│   ├── config/          # Configuration management
+│   ├── database/        # SQLite database & schema
+│   └── routes/          # API routes
 ├── src/
 │   ├── components/
-│   │   ├── Auth/          # Authentication forms
-│   │   ├── Diagram/       # Visual designer components
-│   │   ├── Layout/        # App layout and sidebar
-│   │   └── UI/            # Reusable UI components
-│   ├── contexts/          # React contexts (Auth)
-│   ├── hooks/             # Custom React hooks
-│   ├── lib/               # Utility libraries (Supabase client)
-│   ├── pages/             # Page components
-│   │   ├── admin/         # Admin pages (users, activity log)
-│   │   ├── circuits/      # Circuit management pages
-│   │   ├── dcim/          # DCIM pages
-│   │   ├── ipam/          # IPAM pages
-│   │   ├── tenancy/       # Tenancy pages
-│   │   └── virtualization/# Virtualization pages
-│   └── main.tsx           # Application entry point
-├── supabase/
-│   └── migrations/        # Database migration files
-└── public/                # Static assets
+│   │   ├── Layout/      # App layout and sidebar
+│   │   └── UI/          # Reusable UI components
+│   ├── contexts/        # React contexts (Auth)
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utility libraries (API client)
+│   └── pages/           # Page components
+│       └── admin/       # Admin pages (users, activity log)
+└── public/              # Static assets
 ```
+
+## Backup & Restore
+
+### Backup
+To backup NetForge, copy these files:
+- `config.json` - Application configuration
+- `data/netforge.db` - SQLite database
+
+### Restore
+Place the backup files in the project root and restart the server.
 
 ## Contributing
 
