@@ -1,16 +1,18 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import api, { getAuthToken } from '../lib/api';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
-interface User {
+interface Profile {
   id: string;
   email: string;
-  full_name: string;
-  role: 'admin' | 'user' | 'read_only';
-  avatar_url?: string;
+  full_name: string | null;
+  role: 'admin' | 'manager' | 'user';
+  created_at?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -21,24 +23,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (token) {
-      loadUser();
-    } else {
-      setLoading(false);
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadUser = async () => {
+  const loadProfile = async (userId: string) => {
     try {
-      const data = await api.auth.getUser();
-      setUser(data.user);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setProfile(data);
     } catch (error) {
-      console.error('Error loading user:', error);
-      api.auth.logout();
+      console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
@@ -46,8 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const data = await api.auth.login(email, password);
-      setUser(data.user);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -56,8 +78,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const data = await api.auth.signup(email, password, fullName);
-      setUser(data.user);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+      if (error) throw error;
+
+      if (data.user) {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          role: 'user'
+        });
+      }
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -65,12 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    api.auth.logout();
+    await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

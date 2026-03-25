@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthPage } from './pages/AuthPage';
-import SetupPage from './pages/SetupPage';
 import { Dashboard } from './pages/Dashboard';
 import { Sidebar } from './components/Layout/Sidebar';
 import { ProfilePage } from './pages/ProfilePage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { ActivityLogPage } from './pages/admin/ActivityLogPage';
-import api from './lib/api';
+import { LocationsPage } from './pages/LocationsPage';
+import { AssetsPage } from './pages/AssetsPage';
+import { InfrastructurePage } from './pages/InfrastructurePage';
+import { DesignerPage } from './pages/DesignerPage';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -22,38 +24,23 @@ const VIEW_MAP: Record<string, React.ComponentType> = {
   'profile': ProfilePage,
   'users': UsersPage,
   'activity-log': ActivityLogPage,
+  'locations': LocationsPage,
+  'assets': AssetsPage,
+  'infrastructure': InfrastructurePage,
+  'designer': DesignerPage,
 };
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [installed, setInstalled] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    checkInstallation();
-  }, []);
-
-  const checkInstallation = async () => {
-    try {
-      const status = await api.setup.status();
-      setInstalled(status.installed);
-    } catch (error) {
-      console.error('Error checking installation:', error);
-      setInstalled(false);
-    }
-  };
-
-  if (installed === null || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
-  }
-
-  if (!installed) {
-    return <SetupPage onComplete={() => setInstalled(true)} />;
   }
 
   if (!user) {

@@ -141,7 +141,7 @@ function sectionOwns(section: NavSection, view: string) {
 }
 
 export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, profile } = useAuth();
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     NAV_SECTIONS.forEach((s) => { init[s.id] = sectionOwns(s, currentView); });
@@ -165,7 +165,7 @@ export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-500 truncate pl-0.5">{user?.full_name || user?.email || ''}</p>
+        <p className="text-xs text-gray-500 truncate pl-0.5">{profile?.full_name || user?.email || ''}</p>
       </div>
 
       <div className="px-2 pt-2 shrink-0">
@@ -231,7 +231,7 @@ export function Sidebar({ currentView, onViewChange, onHide }: SidebarProps) {
       </nav>
 
       <div className="px-2 py-2 border-t border-gray-800 shrink-0 space-y-1">
-        {user?.role === 'admin' && (
+        {profile?.role === 'admin' && (
           <>
             <button
               onClick={() => onViewChange('users')}

@@ -1,136 +1,160 @@
-const API_BASE = '/api';
-
-let authToken: string | null = localStorage.getItem('token');
-
-export function setAuthToken(token: string | null) {
-  authToken = token;
-  if (token) {
-    localStorage.setItem('token', token);
-  } else {
-    localStorage.removeItem('token');
-  }
-}
-
-export function getAuthToken(): string | null {
-  return authToken;
-}
-
-async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
-  }
-
-  if (options.headers) {
-    Object.assign(headers, options.headers);
-  }
-
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
-  }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
-}
+import { supabase } from './supabase';
 
 export const api = {
-  auth: {
-    login: async (email: string, password: string) => {
-      const data = await fetchAPI('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      setAuthToken(data.token);
-      return data;
-    },
+  stats: async () => {
+    const [
+      { count: sitesCount },
+      { count: assetsCount },
+      { count: devicesCount },
+      { count: diagramsCount }
+    ] = await Promise.all([
+      supabase.from('sites').select('*', { count: 'exact', head: true }),
+      supabase.from('assets').select('*', { count: 'exact', head: true }),
+      supabase.from('devices').select('*', { count: 'exact', head: true }),
+      supabase.from('infrastructure_diagrams').select('*', { count: 'exact', head: true })
+    ]);
 
-    signup: async (email: string, password: string, full_name?: string) => {
-      const data = await fetchAPI('/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ email, password, full_name }),
-      });
-      setAuthToken(data.token);
-      return data;
-    },
-
-    logout: () => {
-      setAuthToken(null);
-    },
-
-    getUser: () => fetchAPI('/auth/me'),
+    return {
+      sites: sitesCount || 0,
+      assets: assetsCount || 0,
+      devices: devicesCount || 0,
+      diagrams: diagramsCount || 0
+    };
   },
 
-  setup: {
-    status: () => fetchAPI('/setup/status'),
-    install: (data: any) => fetchAPI('/setup/install', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+  getAll: async (table: string) => {
+    const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
   },
 
-  health: () => fetchAPI('/health'),
+  getOne: async (table: string, id: string) => {
+    const { data, error } = await supabase.from(table).select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
 
-  stats: () => fetchAPI('/stats'),
+  create: async (table: string, record: Record<string, unknown>) => {
+    const { data, error } = await supabase.from(table).insert(record).select().single();
+    if (error) throw error;
+    return data;
+  },
 
-  getAll: (table: string) => fetchAPI(`/${table}`),
+  update: async (table: string, id: string, record: Record<string, unknown>) => {
+    const { data, error } = await supabase.from(table).update(record).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
 
-  getOne: (table: string, id: string) => fetchAPI(`/${table}/${id}`),
-
-  create: (table: string, data: any) => fetchAPI(`/${table}`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-
-  update: (table: string, id: string, data: any) => fetchAPI(`/${table}/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-
-  delete: (table: string, id: string) => fetchAPI(`/${table}/${id}`, {
-    method: 'DELETE',
-  }),
+  delete: async (table: string, id: string) => {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) throw error;
+  },
 
   users: {
-    getAll: () => fetchAPI('/users'),
-    getOne: (id: string) => fetchAPI(`/users/${id}`),
-    update: (id: string, data: any) => fetchAPI(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-    delete: (id: string) => fetchAPI(`/users/${id}`, {
-      method: 'DELETE',
-    }),
+    getAll: async () => {
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    getOne: async (id: string) => {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    update: async (id: string, record: Record<string, unknown>) => {
+      const { data, error } = await supabase.from('profiles').update(record).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) throw error;
+    }
   },
 
   activityLog: {
-    getAll: (filters?: { action?: string; table_name?: string }) => {
-      const params = new URLSearchParams();
-      if (filters?.action && filters.action !== 'all') params.append('action', filters.action);
-      if (filters?.table_name && filters.table_name !== 'all') params.append('table_name', filters.table_name);
-      const query = params.toString();
-      return fetchAPI(`/activity_log${query ? `?${query}` : ''}`);
-    },
+    getAll: async (filters?: { action?: string; table_name?: string }) => {
+      let query = supabase.from('activity_log').select('*').order('created_at', { ascending: false });
+      if (filters?.action && filters.action !== 'all') {
+        query = query.eq('action', filters.action);
+      }
+      if (filters?.table_name && filters.table_name !== 'all') {
+        query = query.eq('table_name', filters.table_name);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    }
   },
 
   profile: {
-    get: () => fetchAPI('/profile'),
-    update: (data: { full_name?: string; avatar_url?: string }) => fetchAPI('/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+    get: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    update: async (record: { full_name?: string; avatar_url?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase.from('profiles').update(record).eq('id', user.id).select().single();
+      if (error) throw error;
+      return data;
+    }
   },
+
+  sites: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('sites').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  assets: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('assets').select('*, category:asset_categories(*)').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  locations: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('locations').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  diagrams: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('infrastructure_diagrams').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    getOne: async (id: string) => {
+      const { data, error } = await supabase.from('infrastructure_diagrams').select('*').eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    create: async (record: Record<string, unknown>) => {
+      const { data, error } = await supabase.from('infrastructure_diagrams').insert(record).select().single();
+      if (error) throw error;
+      return data;
+    },
+    update: async (id: string, record: Record<string, unknown>) => {
+      const { data, error } = await supabase.from('infrastructure_diagrams').update(record).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('infrastructure_diagrams').delete().eq('id', id);
+      if (error) throw error;
+    }
+  }
 };
 
 export default api;
