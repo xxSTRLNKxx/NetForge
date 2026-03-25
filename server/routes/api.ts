@@ -154,11 +154,67 @@ const tables = [
 
 tables.forEach(table => createCrudRoutes(table));
 
+router.get('/profile', (req: AuthRequest, res: Response) => {
+  try {
+    const db = getDatabase();
+    const user = db.prepare('SELECT id, email, full_name, avatar_url, role, is_active, created_at FROM users WHERE id = ?').get(req.user?.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+router.put('/profile', (req: AuthRequest, res: Response) => {
+  try {
+    const db = getDatabase();
+    const { full_name, avatar_url } = req.body;
+    db.prepare('UPDATE users SET full_name = ?, avatar_url = ?, updated_at = datetime(\'now\') WHERE id = ?').run(full_name, avatar_url || null, req.user?.id);
+    const user = db.prepare('SELECT id, email, full_name, avatar_url, role, is_active, created_at FROM users WHERE id = ?').get(req.user?.id);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
 router.get('/users', requireAdmin, (req: AuthRequest, res: Response) => {
   try {
     const db = getDatabase();
-    const users = db.prepare('SELECT id, email, full_name, role, is_active, created_at FROM users').all();
+    const users = db.prepare('SELECT id, email, full_name, avatar_url, role, is_active, created_at FROM users').all();
     res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+router.put('/users/:id', requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const db = getDatabase();
+    const { full_name, role, is_active } = req.body;
+    const result = db.prepare('UPDATE users SET full_name = ?, role = ?, is_active = ?, updated_at = datetime(\'now\') WHERE id = ?').run(full_name, role, is_active ? 1 : 0, req.params.id);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const user = db.prepare('SELECT id, email, full_name, avatar_url, role, is_active, created_at FROM users WHERE id = ?').get(req.params.id);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+router.delete('/users/:id', requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const db = getDatabase();
+    if (req.params.id === req.user?.id) {
+      return res.status(400).json({ error: 'Cannot delete yourself' });
+    }
+    const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
